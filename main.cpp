@@ -288,13 +288,16 @@ int main(int argc, char* argv[])
 {
     int n, a;
     string file_path = (argc>1) ? argv[1] : "../instances/test.max";
+	bool heap_type = (argc>3) ? stoi(argv[3]) : false;
     vector<adjacency_row> adjacency = read_input(n,a,file_path);
     vector<int> vertices(n);
     for (int i = 0; i < n; i++)
     {
         vertices[i] = i;
     }
-    int k = Stoer_Wagner(adjacency, vertices,n,a,false);
-    cout << k;
+	auto started = chrono::high_resolution_clock::now();
+    int k = Stoer_Wagner(adjacency, vertices,n,a,heap_type);
+	auto done = chrono::high_resolution_clock::now();
+    cout << k << " " <<chrono::duration_cast<chrono::milliseconds>(done-started).count();
     return 0;
 }
