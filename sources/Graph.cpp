@@ -1,6 +1,4 @@
 #include "../headers/Graph.hpp"
-#include <stdexcept>
-
 void adjacency_row::push_back(edge e)
 {
 	edges.push_back(e);
@@ -30,10 +28,6 @@ void adjacency_row::merge(int v, int u)
 {
 	int idx_v = index(v);
 	int idx_u = index(u);
-	if (idx_v > (int)edges.size() - 1 || idx_u > (int)edges.size() - 1)
-	{
-		throw exception("received negative value");
-	}
 	if (idx_v != -1 && idx_u != -1)
 	{
 		edges[idx_v].cost += edges[idx_u].cost;
