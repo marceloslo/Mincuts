@@ -2,11 +2,13 @@
 #include <iostream>
 #include <climits>
 #include <unordered_map>
+#include <unordered_set>
 #include <algorithm>
 #include <sstream>
 #include <string>
 #include <chrono>
 #include <fstream>
+#include <random>
 
 #include "headers/binheap.hpp"
 #include "headers/Graph.hpp"
@@ -37,7 +39,7 @@ void read_source(int &a,stringstream& s)
     }
 }
 
-void add_edge(vector<adjacency_row> &adjacency, stringstream& s)
+void add_edge(vector<adjacency_row> &adjacency, vector<edge> &edges, stringstream& s, vector<int> &vertex_degree)
 {
     int u, v, cost;
     s >> u;
@@ -46,20 +48,23 @@ void add_edge(vector<adjacency_row> &adjacency, stringstream& s)
     //para que os vertices comecem em 0 e terminem em n-1
     u = u - 1;
     v = v - 1;
-    //excluindo arestas "que não existem"
+    vertex_degree[u] += 1;
+    vertex_degree[v] += 1;
+    //excluindo arestas "que nï¿½o existem"
     if (cost == 0)
         return;
-    //não direcionado
+    //nï¿½o direcionado
     edge e1 = { u,v,cost };
     edge e2 = { v,u,cost };
     if (!adjacency[u].exists(v) && !adjacency[v].exists(u))
     {
         adjacency[u].push_back(e1);
         adjacency[v].push_back(e2);
+        edges.push_back(e1);
     }
 }
 
-vector<adjacency_row> read_input(int &n,int &a,string file_path)
+vector<adjacency_row> read_input(int &n,int &a,string file_path, vector<edge> &edges, vector<int> &vertex_degree)
 {
     n = 0;
     string aux;
@@ -89,7 +94,7 @@ vector<adjacency_row> read_input(int &n,int &a,string file_path)
         //edge attributes
         else if (word == "a")
         {
-            add_edge(adjacency, s);
+            add_edge(adjacency, edges, s, vertex_degree);
         }
     }
     return adjacency;
@@ -284,20 +289,58 @@ int Stoer_Wagner(vector<adjacency_row> adjacency, vector<int> vertices, int n, i
     return mincost;
 }
 
+int RunKarger(vector<edge> edges, unordered_set<int> v, vector<int> vertex_degree){
+    while(v.size() > 2){
+        int index = rand() % edges.size();
+        auto it = edges.begin();
+        edge e = *(it + index);
+        edges.erase(it + index);
+        vertex_degree[e.u] -= 1;
+        vertex_degree[e.v] -= 1;
+        if (vertex_degree[e.u] == 0)
+            v.erase(e.u);
+        if (vertex_degree[e.v] == 0)
+            v.erase(e.v);
+    }
+    return edges.size();
+}
+
+int Karger(vector<edge> edges, unordered_set<int> v, vector<int> vertex_degree, int max){
+    int min = 10000000, index = -1;
+    for (int i = 0; i < max; i++){
+        int k = RunKarger(edges, v, vertex_degree);
+        if (k < min){
+            min = k;
+            index = i;
+        }
+    }
+    cout << "Found minimum at " << index << "iterations" << endl;
+    return min;
+}
+
 int main(int argc, char* argv[])
 {
-    int n, a;
+    int n, a, k;
     string file_path = (argc>1) ? argv[1] : "../instances/test.max";
+    string algorithm = (argc>2) ? argv[2] : "K";
 	bool heap_type = (argc>3) ? stoi(argv[3]) : false;
-    vector<adjacency_row> adjacency = read_input(n,a,file_path);
+    vector<edge> edges;
     vector<int> vertices(n);
+    unordered_set<int> v;
+    vector<int> vertex_degree(n, 0);
     for (int i = 0; i < n; i++)
     {
+        v.insert(i);
         vertices[i] = i;
     }
+    vector<adjacency_row> adjacency = read_input(n,a,file_path, edges, vertex_degree);
 	auto started = chrono::high_resolution_clock::now();
-    int k = Stoer_Wagner(adjacency, vertices,n,a,heap_type);
-	auto done = chrono::high_resolution_clock::now();
+    if (algorithm == "K"){
+        k = Karger(edges, v, vertex_degree, 1000);
+    }else{
+        k = Stoer_Wagner(adjacency, vertices,n,a,heap_type);    
+    }
+    auto done = chrono::high_resolution_clock::now();
     cout << k << " " <<chrono::duration_cast<chrono::milliseconds>(done-started).count();
     return 0;
 }
