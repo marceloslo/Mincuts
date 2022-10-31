@@ -1,0 +1,16 @@
+p max 8 239688
+c terminal arcs: 28900, neighbor_arcs: 210788
+n 2 s
+a 1 2 2
+a 1 5 3
+a 2 5 2
+a 2 6 2
+a 2 3 3
+a 3 7 2
+a 3 4 4
+a 4 7 2
+a 4 8 2
+a 5 6 3
+a 6 7 1
+a 7 8 3
+c End of file
