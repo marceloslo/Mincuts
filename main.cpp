@@ -48,8 +48,6 @@ void add_edge(vector<adjacency_row> &adjacency, vector<edge> &edges, stringstrea
     //para que os vertices comecem em 0 e terminem em n-1
     u = u - 1;
     v = v - 1;
-    vertex_degree[u] += 1;
-    vertex_degree[v] += 1;
     //excluindo arestas "que n�o existem"
     if (cost == 0)
         return;
@@ -61,6 +59,8 @@ void add_edge(vector<adjacency_row> &adjacency, vector<edge> &edges, stringstrea
         adjacency[u].push_back(e1);
         adjacency[v].push_back(e2);
         edges.push_back(e1);
+        vertex_degree[u] += 1;
+        vertex_degree[v] += 1;
     }
 }
 
@@ -84,6 +84,8 @@ vector<adjacency_row> read_input(int &n,int &a,string file_path, vector<edge> &e
         else if(word == "p")
         {
             n=read_problem(s);
+            for (int i = 0; i < n; i++)
+                vertex_degree.push_back(0);
             adjacency.resize(n);
         }
         //source and sink
@@ -289,51 +291,73 @@ int Stoer_Wagner(vector<adjacency_row> adjacency, vector<int> vertices, int n, i
     return mincost;
 }
 
+int find(int k, int set[]){
+    return set[i] == -1 ? i : find(set[i], set);
+}
+
+void join(int i1, int i2, int set[]){
+    set[find(i1, set)] = find(i2, set);
+}
+
+//based on Kruskal's algorithm
 int RunKarger(vector<edge> edges, unordered_set<int> v, vector<int> vertex_degree){
-    while(v.size() > 2){
-        int index = rand() % edges.size();
-        auto it = edges.begin();
-        edge e = *(it + index);
-        edges.erase(it + index);
-        vertex_degree[e.u] -= 1;
-        vertex_degree[e.v] -= 1;
-        if (vertex_degree[e.u] == 0)
-            v.erase(e.u);
-        if (vertex_degree[e.v] == 0)
-            v.erase(e.v);
+    vector<edge> random_edges = edges;
+    for (auto &it : random_edges){
+        it.cost = rand();
     }
-    return edges.size();
+    sort(random_edges.begin(), random_edges.end());
+
+    int *sets = new int[v.size()];
+    memset(sets, -1, sizeof(int) * v.size());
+
+    vector<edge> mst;
+    int u, v;
+    for (auto &it : random_edges){
+        u = it.u;
+        v = it.v;
+        if (find(u, set) != find(v, set)){
+            mst.push_back(it);
+            join(u, v, set);
+        }
+    }
+    delete[] sets;
+
+    
 }
 
 int Karger(vector<edge> edges, unordered_set<int> v, vector<int> vertex_degree, int max){
     int min = 10000000, index = -1;
     for (int i = 0; i < max; i++){
-        int k = RunKarger(edges, v, vertex_degree);
+        vector<edge> aux_edges = edges;
+        unordered_set<int> aux_v = v;
+        vector<int> aux_vertex_degree = vertex_degree;
+        int k = RunKarger(aux_edges, aux_v, aux_vertex_degree);
         if (k < min){
             min = k;
             index = i;
         }
+        break;
     }
-    cout << "Found minimum at " << index << "iterations" << endl;
+    cout << "Found minimum at " << index << " iterations" << endl;
     return min;
 }
 
 int main(int argc, char* argv[])
 {
     int n, a, k;
-    string file_path = (argc>1) ? argv[1] : "../instances/test.max";
+    string file_path = (argc>1) ? argv[1] : "./instances/test.max";
     string algorithm = (argc>2) ? argv[2] : "K";
 	bool heap_type = (argc>3) ? stoi(argv[3]) : false;
     vector<edge> edges;
+    vector<int> vertex_degree;
+    vector<adjacency_row> adjacency = read_input(n,a,file_path, edges, vertex_degree);
     vector<int> vertices(n);
     unordered_set<int> v;
-    vector<int> vertex_degree(n, 0);
     for (int i = 0; i < n; i++)
     {
         v.insert(i);
         vertices[i] = i;
     }
-    vector<adjacency_row> adjacency = read_input(n,a,file_path, edges, vertex_degree);
 	auto started = chrono::high_resolution_clock::now();
     if (algorithm == "K"){
         k = Karger(edges, v, vertex_degree, 1000);
@@ -341,6 +365,6 @@ int main(int argc, char* argv[])
         k = Stoer_Wagner(adjacency, vertices,n,a,heap_type);    
     }
     auto done = chrono::high_resolution_clock::now();
-    cout << k << " " <<chrono::duration_cast<chrono::milliseconds>(done-started).count();
+    cout << k << " " <<chrono::duration_cast<chrono::milliseconds>(done-started).count() << endl;
     return 0;
 }

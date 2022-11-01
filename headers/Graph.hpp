@@ -5,12 +5,13 @@
 
 using namespace std;
 
-
 typedef struct edge
 {
 	int u, v, cost;
 	bool mark = false;
 }edge;
+
+bool operator> (const edge &e1, const edge &e2) {return e1.cost >  e2.cost;}
 
 class adjacency_row
 {
