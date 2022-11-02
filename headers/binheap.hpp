@@ -33,7 +33,6 @@ public:
 	void swap(int index1, int index2);
 
 private:
-	void heapify(int i);
 	vector<pair<int, int>> heap;
 	unordered_map<int,int> indexes;
 };
