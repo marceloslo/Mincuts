@@ -400,7 +400,7 @@ int main(int argc, char* argv[])
     }
 	auto started = chrono::high_resolution_clock::now();
     if (algorithm == "K"){
-        k = Karger(edges, v, 1000);
+        k = Karger(edges, v, 50);
     }else{
         k = Stoer_Wagner(adjacency, vertices,n,a,heap_type);    
     }
