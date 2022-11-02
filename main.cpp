@@ -379,7 +379,7 @@ int Karger(vector<edge> edges, unordered_set<int> v, int max){
             index = i;
         }
     }
-    cout << "Found minimum at " << index << " iterations" << endl;
+    cout << "Found minimum at " << index + 1 << " iterations" << endl;
     return min;
 }
 
@@ -400,7 +400,7 @@ int main(int argc, char* argv[])
     }
 	auto started = chrono::high_resolution_clock::now();
     if (algorithm == "K"){
-        k = Karger(edges, v, 50);
+        k = Karger(edges, v, 100);
     }else{
         k = Stoer_Wagner(adjacency, vertices,n,a,heap_type);    
     }
