@@ -11,7 +11,7 @@ void binary_heap::push(pair<int, int> p)
 	int i = heap.size();
 	heap.push_back(p);
 	indexes[p.second] = i;
-	while (i!=0 && heap[parent(i)] < heap[i])
+	while (i > 0 && heap[parent(i)] < heap[i])
 	{
 		this->swap(parent(i), i);
 		i = parent(i);
@@ -26,9 +26,9 @@ void binary_heap::increase_key(int key, int increment)
 		return;
 	}
 	int i = indexes[key];
-	pair<int, int> new_value = make_pair(heap[i].first + increment, heap[i].second);
+	pair<int, int> new_value = make_pair(heap[i].first+increment, heap[i].second);
 	heap[i] = new_value;
-	while (i != 0 && heap[parent(i)] < heap[i])
+	while (i > 0 && heap[parent(i)] < heap[i])
 	{
 		this->swap(i, parent(i));
 		i = parent(i);
@@ -43,7 +43,33 @@ pair<int, int> binary_heap::extract_max()
 	heap.pop_back();
 	if(!heap.empty())
 		indexes[heap[0].second] = 0;
-	heapify(0);
+
+	int i = 0;
+	while (left(i) < heap.size())
+	{
+		if (right(i) >= heap.size() || heap[left(i)] >= heap[right(i)])
+		{
+			if (heap[i] > heap[left(i)])
+			{
+				swap(i, left(i));
+			}
+			else
+			{
+				break;
+			}
+		}
+		else
+		{
+			if (heap[i] > heap[right(i)])
+			{
+				swap(i, right(i));
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
 	return root;
 }
 
@@ -54,27 +80,11 @@ size_t binary_heap::size()
 	return this->heap.size();
 }
 
-void binary_heap::swap(int index1, int index2)
+void binary_heap::swap(int i, int j)
 {
-	pair<int,int> temp = heap[index1];
-	indexes[heap[index1].second] = index2;
-	indexes[heap[index2].second] = index1;
-	heap[index1] = heap[index2];
-	heap[index2] = temp;
-}
-
-void binary_heap::heapify(int i)
-{
-	int l = left(i);
-	int r = right(i);
-	int biggest = i;
-	if (l < heap.size() && heap[l] > heap[i])
-		biggest = l;
-	if (r < heap.size() && heap[r] > heap[biggest])
-		biggest = r;
-	if (biggest != i)
-	{
-		swap(i, biggest);
-		heapify(biggest);
-	}
+	pair<int,int> temp = heap[i];
+	heap[i] = heap[j];
+	heap[j] = temp;
+	indexes[heap[i].second] = i;
+	indexes[heap[j].second] = j;
 }
