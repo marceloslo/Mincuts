@@ -6,9 +6,11 @@
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include <cstring>
 #include <chrono>
 #include <fstream>
 #include <random>
+#include <queue>
 
 #include "headers/binheap.hpp"
 #include "headers/Graph.hpp"
@@ -39,7 +41,7 @@ void read_source(int &a,stringstream& s)
     }
 }
 
-void add_edge(vector<adjacency_row> &adjacency, vector<edge> &edges, stringstream& s, vector<int> &vertex_degree)
+void add_edge(vector<adjacency_row> &adjacency, vector<edge> &edges, stringstream& s)
 {
     int u, v, cost;
     s >> u;
@@ -59,12 +61,10 @@ void add_edge(vector<adjacency_row> &adjacency, vector<edge> &edges, stringstrea
         adjacency[u].push_back(e1);
         adjacency[v].push_back(e2);
         edges.push_back(e1);
-        vertex_degree[u] += 1;
-        vertex_degree[v] += 1;
     }
 }
 
-vector<adjacency_row> read_input(int &n,int &a,string file_path, vector<edge> &edges, vector<int> &vertex_degree)
+vector<adjacency_row> read_input(int &n,int &a,string file_path, vector<edge> &edges)
 {
     n = 0;
     string aux;
@@ -84,8 +84,6 @@ vector<adjacency_row> read_input(int &n,int &a,string file_path, vector<edge> &e
         else if(word == "p")
         {
             n=read_problem(s);
-            for (int i = 0; i < n; i++)
-                vertex_degree.push_back(0);
             adjacency.resize(n);
         }
         //source and sink
@@ -96,7 +94,7 @@ vector<adjacency_row> read_input(int &n,int &a,string file_path, vector<edge> &e
         //edge attributes
         else if (word == "a")
         {
-            add_edge(adjacency, edges, s, vertex_degree);
+            add_edge(adjacency, edges, s);
         }
     }
     return adjacency;
@@ -291,7 +289,7 @@ int Stoer_Wagner(vector<adjacency_row> adjacency, vector<int> vertices, int n, i
     return mincost;
 }
 
-int find(int k, int set[]){
+int find(int i, int set[]){
     return set[i] == -1 ? i : find(set[i], set);
 }
 
@@ -299,8 +297,8 @@ void join(int i1, int i2, int set[]){
     set[find(i1, set)] = find(i2, set);
 }
 
-//based on Kruskal's algorithm
-int RunKarger(vector<edge> edges, unordered_set<int> v, vector<int> vertex_degree){
+//Kruskal's algorithm
+vector<edge> find_mst(vector<edge> edges, unordered_set<int> v){
     vector<edge> random_edges = edges;
     for (auto &it : random_edges){
         it.cost = rand();
@@ -311,32 +309,75 @@ int RunKarger(vector<edge> edges, unordered_set<int> v, vector<int> vertex_degre
     memset(sets, -1, sizeof(int) * v.size());
 
     vector<edge> mst;
-    int u, v;
+    int u, v_;
     for (auto &it : random_edges){
         u = it.u;
-        v = it.v;
-        if (find(u, set) != find(v, set)){
+        v_ = it.v;
+        if (find(u, sets) != find(v_, sets)){
             mst.push_back(it);
-            join(u, v, set);
+            join(u, v_, sets);
         }
     }
     delete[] sets;
-
-    
+    return mst;
 }
 
-int Karger(vector<edge> edges, unordered_set<int> v, vector<int> vertex_degree, int max){
+//BFS
+unordered_set<int> find_vertices(int s, vector<edge> mst){
+    queue<int> q;
+    unordered_set<int> visited;
+    q.push(s);
+    visited.insert(s);
+    while (!q.empty()){
+        int v = q.front();
+        q.pop();
+        for (auto &it : mst){
+            if (it.u == v){
+                if(!visited.count(it.v)){
+                    visited.insert(it.v);
+                    q.push(it.v);
+                }
+            }else if(it.v == v){
+                if(!visited.count(it.u)){
+                    visited.insert(it.u);
+                    q.push(it.u);
+                }
+            }
+        }
+    }
+    return visited;
+}
+
+int RunKarger(vector<edge> edges, unordered_set<int> v){
+    vector<edge> mst = find_mst(edges, v);
+    auto it = max_element(mst.begin(), mst.end());
+    edge max_edge = *it;
+    mst.erase(it);
+    
+    int v1 = max_edge.u;
+    int v2 = max_edge.v;
+
+    unordered_set<int> left = find_vertices(v1, mst);
+    unordered_set<int> right = find_vertices(v2, mst);
+
+    int k = 0;
+    for (auto &it : edges){
+        if ((left.count(it.u) && right.count(it.v)) || (right.count(it.u) && left.count(it.v)))
+            k++;
+    }
+    return k;
+}
+
+int Karger(vector<edge> edges, unordered_set<int> v, int max){
     int min = 10000000, index = -1;
     for (int i = 0; i < max; i++){
         vector<edge> aux_edges = edges;
         unordered_set<int> aux_v = v;
-        vector<int> aux_vertex_degree = vertex_degree;
-        int k = RunKarger(aux_edges, aux_v, aux_vertex_degree);
+        int k = RunKarger(aux_edges, aux_v);
         if (k < min){
             min = k;
             index = i;
         }
-        break;
     }
     cout << "Found minimum at " << index << " iterations" << endl;
     return min;
@@ -349,8 +390,7 @@ int main(int argc, char* argv[])
     string algorithm = (argc>2) ? argv[2] : "K";
 	bool heap_type = (argc>3) ? stoi(argv[3]) : false;
     vector<edge> edges;
-    vector<int> vertex_degree;
-    vector<adjacency_row> adjacency = read_input(n,a,file_path, edges, vertex_degree);
+    vector<adjacency_row> adjacency = read_input(n,a,file_path, edges);
     vector<int> vertices(n);
     unordered_set<int> v;
     for (int i = 0; i < n; i++)
@@ -360,7 +400,7 @@ int main(int argc, char* argv[])
     }
 	auto started = chrono::high_resolution_clock::now();
     if (algorithm == "K"){
-        k = Karger(edges, v, vertex_degree, 1000);
+        k = Karger(edges, v, 1000);
     }else{
         k = Stoer_Wagner(adjacency, vertices,n,a,heap_type);    
     }

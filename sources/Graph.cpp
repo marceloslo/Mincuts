@@ -1,4 +1,5 @@
 #include "../headers/Graph.hpp"
+
 void adjacency_row::push_back(edge e)
 {
 	edges.push_back(e);
